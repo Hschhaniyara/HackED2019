@@ -26,7 +26,9 @@ public class remote extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_remote);
+
         BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
         Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
         if(pairedDevices.size() > 0)
         {
@@ -48,19 +50,18 @@ public class remote extends AppCompatActivity {
         try {
             btSocket = btDevice.createInsecureRfcommSocketToServiceRecord(uuid);//create a RFCOMM (SPP) connection
         } catch (Exception e) {
-
         }
         BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
         try{
             btSocket.connect();
 
         } catch (Exception e) {
-            Log.e("OOOPS", "Could not connect");
         }
 
         if(btAdapter == null) {
             Toast.makeText(getApplicationContext(), "Bluetooth not available", Toast.LENGTH_LONG).show();
         } else {
+            Toast.makeText(getApplicationContext(), "Bluetooth available", Toast.LENGTH_LONG).show();
             if(!btAdapter.isEnabled()) {
                 Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 startActivityForResult(enableIntent, 3);
@@ -69,12 +70,12 @@ public class remote extends AppCompatActivity {
                 connectThread.start();
             }
         }
+
         DataHolder.setData(btSocket);
         JoystickView joystick = (JoystickView) findViewById(R.id.joystickView);
         joystick.setOnMoveListener(new JoystickView.OnMoveListener() {
             @Override
             public void onMove(int angle, int strength) {
-//                Log.e("check",String.valueOf(strength));
                 if(btSocket != null) {
                     try{
                         OutputStream out = btSocket.getOutputStream();
@@ -148,7 +149,7 @@ public class remote extends AppCompatActivity {
         }
 
         public void run() {
-            // Cancel discovery because it otherwise slows down the connection.
+
             btAdapter.cancelDiscovery();
 
             try {
@@ -168,7 +169,6 @@ public class remote extends AppCompatActivity {
             try {
                 thisSocket.close();
             } catch (IOException e) {
-                Log.e("TEST", "Can't close socket");
             }
         }
     }

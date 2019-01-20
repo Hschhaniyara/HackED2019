@@ -4,6 +4,7 @@
 
 #include <Arduino.h>
 #include "superfluous.h"
+// #include <string>
 
 const int steeringPin1 = 28;
 const int steeringPin2 = 29;
@@ -22,6 +23,61 @@ const int motorPin2 = 41;
 int lastState = 0;
 int status = 1;
 int movement = 0;
+int totalLeft = 0;
+int totalRight = 0;
+
+// This function takes the pin numbers, and calculates the distance of the nearest
+// surface to the ultrasonic sensor.
+int soundPing(int trigPin, int echoPin) {
+  // Clears the trigPin
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  // Sets the trigPin on HIGH state for 10 micro seconds
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  // Reads the echoPin, returns the sound wave travel time in microseconds
+  long duration = pulseIn(echoPin, HIGH);
+  // Calculating the distance
+  int distance= duration*0.034/2;
+
+  return distance;
+}
+
+// This function will get the average height of the ground. Any difference
+// from this average means a drop or obstacle.
+void bottomCensorHeigth() {
+  int i = 0;
+  int leftDrop = soundPing(leftBottomTrig, leftBottomEcho);
+  int rightDrop = soundPing(rightBottomTrig, rightBottomEcho);
+
+  // Get 20 acceptable readings from left bottom sensor.
+  while (1) {
+    if (leftDrop < 30) {
+      totalLeft += leftDrop;
+      i = i + 1;
+      if ( i == 20) {
+        break;
+      }
+    }
+  }
+
+  // Get 20 aceptable readings from right bottom sensor.
+  while (1) {
+    if (rightDrop < 30) {
+      totalRight += rightDrop;
+      i = i + 1;
+      if ( i == 20) {
+        break;
+      }
+    }
+  }
+
+  // Get average of both readings.
+  totalRight = totalRight / 20;
+  totalLeft = totalLeft / 20;
+
+}
 
 // This functions simply enables the pullup resistors to the pins so we can
 // read from them.
@@ -43,25 +99,12 @@ void setup() {
     Serial.begin(9600);
     digitalWrite(motorPin1, LOW);
     digitalWrite(motorPin2, LOW);
+
+    // Get average sensor height.
+    bottomCensorHeigth();
 }
 
-// This function takes the pin numbers, and calculates the distance of the nearest
-// surface to the ultrasonic sensor.
-int soundPing(int trigPin, int echoPin) {
-  // Clears the trigPin
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  // Sets the trigPin on HIGH state for 10 micro seconds
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
-  // Reads the echoPin, returns the sound wave travel time in microseconds
-  long duration = pulseIn(echoPin, HIGH);
-  // Calculating the distance
-  int distance= duration*0.034/2;
 
-  return distance;
-}
 
 // This functions writes data to the bluetooth module.
 void sendToBluetooth(int mode, int leftDistance, int rightDistance, int frontDistance) {
@@ -223,15 +266,25 @@ void selfCommand() {
   int yVal = 0;
 
   while(1) {
+    int angle = 0;
+    int length = 0;
+
     if(Serial.available() > 0) { // When data is available, read the data. (x Val).
-        xVal = Serial.read();      //Read the incoming data and store it into variable data
+        angle= Serial.read();      //Read the incoming data and store it into variable data
     }
     if(Serial.available() > 0) { // When data is available, read the data. (y Val).:
-        yVal = Serial.read();      //Read the incoming data and store it into variable data
+        length = Serial.read();      //Read the incoming data and store it into variable data
     }
 
+    if (angle == 361 or length == 361) {
+      break;
+    }
+
+    xVal = length * cos(angle);
+    yVal = length * sin(angle);
+
     // Check sign of xVal, and set pins in order to get correct motion. (forward or backward).
-    if xVal > 0{ // Going forward
+    if (xVal > 0) { // Going forward
       analogWrite(motorPin1, xVal);
       digitalWrite(motorPin2, LOW);
     } else { // Goign backward
@@ -240,7 +293,7 @@ void selfCommand() {
     }
 
     // Check sign of yVal, and set pins in order to get correct motion. (Left and right).
-    if yVal > 0{ // Going left.
+    if (yVal > 0) { // Going left.
       digitalWrite(steeringPin1, LOW);
       analogWrite(steeringPin2, yVal);
     } else { // Going right.
@@ -250,14 +303,27 @@ void selfCommand() {
   }
 }
 
+
+void test() {
+  // Serial.println("IO TEST");
+
+  using namespace std;
+  if(Serial.available() > 0) { // Send data only when you receive data:
+      int data = Serial.read();      //Read the incoming data and store it into variable data
+
+      Serial.print("GOT: ");
+      Serial.println(data);
+    }
+}
+
 // This is the main function in the arduino program. It reads from the bluetooth
 //  Adapter to see which mode has been selected through the app. The program
 //  then runs the corresponding code.
 void loop() {
 
   test();
-  if(Serial.available() > 0) { // Send data only when you receive data:
-      int data = Serial.read();      //Read the incoming data and store it into variable data
+  // if(Serial.available() > 0) { // Send data only when you receive data:
+  //     int data = Serial.read();      //Read the incoming data and store it into variable data
 
       // status = int(data);
 
@@ -272,6 +338,6 @@ void loop() {
       // } else {
       //   test();
       // }
-    }
+    // }
 
 }

@@ -24,7 +24,7 @@ int status = 1;
 int movement = 0;
 
 // This functions simply enables the pullup resistors to the pins so we can
-// read from them. 
+// read from them.
 void setup() {
     pinMode(midEchoPin, INPUT);
     pinMode(midTrigPin, OUTPUT);
@@ -145,6 +145,7 @@ void followFunction() {
 // This function will map the surrounding objects, and will relay information to
 // the android application which will map it.
 void mapRoom() {
+  int maxSpeed = 75;
   while(1) {
     int readingMid = soundPing(midTrigPin, midEchoPin);
     int readingLeft = soundPing(leftTrigPin, leftEchoPin);
@@ -154,7 +155,7 @@ void mapRoom() {
     if (readingMid < 250) {
       if (readingMid < 25) {
         Serial.println("Moving Backward");
-        analogWrite(motorPin1, 150);
+        analogWrite(motorPin1, maxSpeed);
         analogWrite(motorPin2,0);
         movement = 1;
         lastState = 1;
@@ -162,20 +163,20 @@ void mapRoom() {
         Serial.println("Moving Forward");
         lastState = 2;
         analogWrite(motorPin1, 0);
-        analogWrite(motorPin2,150);
+        analogWrite(motorPin2,maxSpeed);
         movement = 2;
       } else {
         Serial.println("TURN");
         if (lastState == 1 and readingMid < 55) {
           digitalWrite(motorPin1, LOW);
           digitalWrite(motorPin2, HIGH);
-          delay(500);
+          delay(200);
           lastState = 0;
           movement = 0; //Car is stopping, so stop tracking distance.
         } else if (lastState == 2 and readingMid > 30) {
           digitalWrite(motorPin1, HIGH);
           digitalWrite(motorPin2, LOW);
-          delay(500);
+          delay(200);
           lastState = 0;
           movement = 0; //Car is stopping, so stop tracking distance.
         }

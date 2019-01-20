@@ -56,8 +56,8 @@ public class MainActivity extends AppCompatActivity {
         remote.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                Intent login_intent = new Intent(MainActivity.this, login.class);
-//                startActivityForResult(login_intent, 0);
+                Intent intent = new Intent(MainActivity.this, remote.class);
+                startActivityForResult(intent, 0);
 
             }
         });
